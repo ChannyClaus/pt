@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = "0.22.0"
+ruff_python_parser = { path = "../ruff/crates/ruff_python_parser" }
