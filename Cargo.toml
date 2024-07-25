@@ -14,3 +14,5 @@ ruff_python_parser = { path = "../ruff/crates/ruff_python_parser" }
 ruff_python_ast = { path = "../ruff/crates/ruff_python_ast" }
 ruff_python_formatter = { path = "../ruff/crates/ruff_python_formatter" }
 ruff_python_trivia = { path = "../ruff/crates/ruff_python_trivia" }
+ruff_source_file = { path = "../ruff/crates/ruff_source_file" }
+ruff_formatter = { path = "../ruff/crates/ruff_formatter" }
