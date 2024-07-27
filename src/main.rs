@@ -14,7 +14,7 @@ fn main() {
     println!("reading {}...", path);
     let parsed = ruff_python_parser::parse(&source, ruff_python_parser::Mode::Module).unwrap();
     let mut syntax = parsed.into_syntax();
-    normalizer::Normalizer.visit_module(&mut syntax);
+    normalizer::Normalizer::new().visit_module(&mut syntax);
 
     let indentation = Indentation::default();
     let quote = Quote::default();

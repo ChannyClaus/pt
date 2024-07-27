@@ -17,9 +17,14 @@ use ruff_python_ast::{self as ast, Expr, Stmt};
 ///   so we carve our own path here by stripping everything that looks like code snippets from
 ///   string literals.
 /// - Ignores nested tuples in deletions. (Black does the same.)
-pub struct Normalizer;
+pub struct Normalizer {
+    fixtures: Vec<String>,
+}
 
 impl Normalizer {
+    pub fn new() -> Self {
+        Self { fixtures: vec![] }
+    }
     /// Transform an AST module into a normalized representation.
     #[allow(dead_code)]
     pub(crate) fn visit_module(&self, module: &mut ast::Mod) {
@@ -36,6 +41,25 @@ impl Normalizer {
 
 impl Transformer for Normalizer {
     fn visit_stmt(&self, stmt: &mut Stmt) {
+        match stmt {
+            Stmt::FunctionDef(ast::StmtFunctionDef {
+                parameters,
+                body,
+                decorator_list,
+                returns,
+                type_params,
+                name,
+                ..
+            }) => {
+                println!("inside function def");
+                println!("name: {}", name);
+                println!("decorator_list: {:#?}", decorator_list);
+            }
+            _ => {
+                println!("other things");
+            }
+        }
+
         if let Stmt::Delete(delete) = stmt {
             // Treat `del a, b` and `del (a, b)` equivalently.
             delete.targets = delete
