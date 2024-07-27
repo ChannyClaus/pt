@@ -1,5 +1,8 @@
 mod normalizer;
-use ruff_python_parser;
+use ruff_python_ast::{str::Quote, Mod, ModModule};
+use ruff_python_codegen::{stylist::Indentation, Generator};
+use ruff_python_parser::{self};
+use ruff_source_file::LineEnding;
 use std::{env, fs};
 
 fn main() {
@@ -10,9 +13,17 @@ fn main() {
 
     println!("test_file: {}", path);
     let parsed = ruff_python_parser::parse(&source, ruff_python_parser::Mode::Module).unwrap();
-    println!("parsed: {:?}", parsed);
-    normalizer::Normalizer.visit_module(&mut parsed.into_syntax());
-    println!("display: ")
+    println!("parsed: {:#?}", parsed);
+    let mut syntax = parsed.into_syntax();
+    normalizer::Normalizer.visit_module(&mut syntax);
+
+    let indentation = Indentation::default();
+    let quote = Quote::default();
+    let line_ending = LineEnding::default();
+    let mut generator = Generator::new(&indentation, quote, line_ending);
+
+    generator.unparse_suite(&syntax.as_module().unwrap().body);
+    println!("generator.generate(): {}", generator.generate());
     // let comment_ranges = ruff_python_trivia::CommentRanges::new(vec![]);
     // let formatted = ruff_python_formatter::format_module_ast(
     //     &parsed,

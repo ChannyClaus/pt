@@ -60,67 +60,9 @@ impl Transformer for Normalizer {
     }
 
     fn visit_string_literal(&self, string_literal: &mut ast::StringLiteral) {
-        static STRIP_DOC_TESTS: Lazy<Regex> = Lazy::new(|| {
-            Regex::new(
-                r#"(?mx)
-                    (
-                        # strip doctest PS1 prompt lines
-                        ^\s*>>>\s.*(\n|$)
-                        |
-                        # strip doctest PS2 prompt lines
-                        # Also handles the case of an empty ... line.
-                        ^\s*\.\.\.((\n|$)|\s.*(\n|$))
-                    )+
-                "#,
-            )
-            .unwrap()
-        });
-        static STRIP_RST_BLOCKS: Lazy<Regex> = Lazy::new(|| {
-            // This is kind of unfortunate, but it's pretty tricky (likely
-            // impossible) to detect a reStructuredText block with a simple
-            // regex. So we just look for the start of a block and remove
-            // everything after it. Talk about a hammer.
-            Regex::new(r#"::(?s:.*)"#).unwrap()
-        });
-        static STRIP_MARKDOWN_BLOCKS: Lazy<Regex> = Lazy::new(|| {
-            // This covers more than valid Markdown blocks, but that's OK.
-            Regex::new(r#"(```|~~~)\p{any}*(```|~~~|$)"#).unwrap()
-        });
-
-        // Start by (1) stripping everything that looks like a code
-        // snippet, since code snippets may be completely reformatted if
         // they are Python code.
-        string_literal.value = STRIP_DOC_TESTS
-            .replace_all(
-                &string_literal.value,
-                "<DOCTEST-CODE-SNIPPET: Removed by normalizer>\n",
-            )
-            .into_owned()
-            .into_boxed_str();
-        string_literal.value = STRIP_RST_BLOCKS
-            .replace_all(
-                &string_literal.value,
-                "<RSTBLOCK-CODE-SNIPPET: Removed by normalizer>\n",
-            )
-            .into_owned()
-            .into_boxed_str();
-        string_literal.value = STRIP_MARKDOWN_BLOCKS
-            .replace_all(
-                &string_literal.value,
-                "<MARKDOWN-CODE-SNIPPET: Removed by normalizer>\n",
-            )
-            .into_owned()
-            .into_boxed_str();
-        // Normalize a string by (2) stripping any leading and trailing space from each
-        // line, and (3) removing any blank lines from the start and end of the string.
-        string_literal.value = string_literal
-            .value
-            .lines()
-            .map(str::trim)
-            .collect::<Vec<_>>()
-            .join("\n")
-            .trim()
-            .to_owned()
-            .into_boxed_str();
+        println!("string_literal: {:?}", string_literal);
+        string_literal.value = "".into();
+        println!("string_literal: {:?}", string_literal);
     }
 }
