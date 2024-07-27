@@ -57,8 +57,6 @@ impl Transformer for Normalizer {
 
     fn visit_string_literal(&self, string_literal: &mut ast::StringLiteral) {
         // they are Python code.
-        println!("string_literal: {:?}", string_literal);
         string_literal.value = "".into();
-        println!("string_literal: {:?}", string_literal);
     }
 }

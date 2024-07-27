@@ -11,9 +11,8 @@ fn main() {
     let binding = fs::read_to_string(path).unwrap();
     let source = binding.as_str();
 
-    println!("test_file: {}", path);
+    println!("reading {}...", path);
     let parsed = ruff_python_parser::parse(&source, ruff_python_parser::Mode::Module).unwrap();
-    println!("parsed: {:#?}", parsed);
     let mut syntax = parsed.into_syntax();
     normalizer::Normalizer.visit_module(&mut syntax);
 
@@ -23,16 +22,5 @@ fn main() {
     let mut generator = Generator::new(&indentation, quote, line_ending);
 
     generator.unparse_suite(&syntax.as_module().unwrap().body);
-    println!("generator.generate(): {}", generator.generate());
-    // let comment_ranges = ruff_python_trivia::CommentRanges::new(vec![]);
-    // let formatted = ruff_python_formatter::format_module_ast(
-    //     &parsed,
-    //     &comment_ranges,
-    //     source,
-    //     ruff_python_formatter::PyFormatOptions::default(),
-    // );
-    // println!(
-    //     "formatted.print(): {}",
-    //     formatted.unwrap().print().unwrap().as_code()
-    // );
+    println!("{}", generator.generate());
 }
