@@ -1,8 +1,4 @@
-use {
-    itertools::Either::{Left, Right},
-    once_cell::sync::Lazy,
-    regex::Regex,
-};
+use itertools::Either::{Left, Right};
 
 use ruff_python_ast::visitor::transformer;
 use ruff_python_ast::visitor::transformer::Transformer;
