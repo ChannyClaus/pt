@@ -1,5 +1,5 @@
 mod normalizer;
-use ruff_python_ast::{str::Quote, Mod, ModModule};
+use ruff_python_ast::str::Quote;
 use ruff_python_codegen::{stylist::Indentation, Generator};
 use ruff_python_parser::{self};
 use ruff_source_file::LineEnding;
