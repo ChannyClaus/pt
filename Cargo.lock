@@ -356,6 +356,7 @@ checksum = "38caf58cc5ef2fed281f89292ef23f6365465ed9a41b7a7754eb4e26496c92df"
 [[package]]
 name = "ruff_python_ast"
 version = "0.0.0"
+source = "git+https://github.com/ChannyClaus/ruff.git#c487d69e678a6ded437b95de44b9967c0e7e289b"
 dependencies = [
  "aho-corasick",
  "bitflags",
@@ -372,6 +373,7 @@ dependencies = [
 [[package]]
 name = "ruff_python_codegen"
 version = "0.0.0"
+source = "git+https://github.com/ChannyClaus/ruff.git#c487d69e678a6ded437b95de44b9967c0e7e289b"
 dependencies = [
  "once_cell",
  "ruff_python_ast",
@@ -384,6 +386,7 @@ dependencies = [
 [[package]]
 name = "ruff_python_literal"
 version = "0.0.0"
+source = "git+https://github.com/ChannyClaus/ruff.git#c487d69e678a6ded437b95de44b9967c0e7e289b"
 dependencies = [
  "bitflags",
  "itertools",
@@ -394,6 +397,7 @@ dependencies = [
 [[package]]
 name = "ruff_python_parser"
 version = "0.0.0"
+source = "git+https://github.com/ChannyClaus/ruff.git#c487d69e678a6ded437b95de44b9967c0e7e289b"
 dependencies = [
  "bitflags",
  "bstr",
@@ -412,6 +416,7 @@ dependencies = [
 [[package]]
 name = "ruff_python_trivia"
 version = "0.0.0"
+source = "git+https://github.com/ChannyClaus/ruff.git#c487d69e678a6ded437b95de44b9967c0e7e289b"
 dependencies = [
  "itertools",
  "ruff_source_file",
@@ -422,6 +427,7 @@ dependencies = [
 [[package]]
 name = "ruff_source_file"
 version = "0.0.0"
+source = "git+https://github.com/ChannyClaus/ruff.git#c487d69e678a6ded437b95de44b9967c0e7e289b"
 dependencies = [
  "memchr",
  "once_cell",
@@ -431,6 +437,7 @@ dependencies = [
 [[package]]
 name = "ruff_text_size"
 version = "0.0.0"
+source = "git+https://github.com/ChannyClaus/ruff.git#c487d69e678a6ded437b95de44b9967c0e7e289b"
 
 [[package]]
 name = "rustc-hash"
