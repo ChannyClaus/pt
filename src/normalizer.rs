@@ -4,27 +4,9 @@ use ruff_python_ast::visitor::transformer;
 use ruff_python_ast::visitor::transformer::Transformer;
 use ruff_python_ast::{self as ast, Expr, Stmt};
 
-/// A struct to normalize AST nodes for the purpose of comparing formatted representations for
-/// semantic equivalence.
-///
-/// Vis-à-vis comparing ASTs, comparing these normalized representations does the following:
-/// - Ignores non-abstraction information that we've encoded into the AST, e.g., the difference
-///   between `class C: ...` and `class C(): ...`, which is part of our AST but not `CPython`'s.
-/// - Normalize strings. The formatter can re-indent docstrings, so we need to compare string
-///   contents ignoring whitespace. (Black does the same.)
-/// - The formatter can also reformat code snippets when they're Python code, which can of
-///   course change the string in arbitrary ways. Black itself does not reformat code snippets,
-///   so we carve our own path here by stripping everything that looks like code snippets from
-///   string literals.
-/// - Ignores nested tuples in deletions. (Black does the same.)
-pub struct Normalizer {
-    fixtures: Vec<String>,
-}
+pub struct Normalizer;
 
 impl Normalizer {
-    pub fn new() -> Self {
-        Self { fixtures: vec![] }
-    }
     /// Transform an AST module into a normalized representation.
     #[allow(dead_code)]
     pub(crate) fn visit_module(&self, module: &mut ast::Mod) {
@@ -49,14 +31,15 @@ impl Transformer for Normalizer {
                 returns,
                 type_params,
                 name,
+                range,
                 ..
             }) => {
-                println!("inside function def");
-                println!("name: {}", name);
-                println!("decorator_list: {:#?}", decorator_list);
+                // println!("inside function def");
+                // println!("name: {}", name);
+                // println!("decorator_list: {:#?}", decorator_list);
             }
             _ => {
-                println!("other things");
+                // println!("other things");
             }
         }
 
@@ -77,10 +60,5 @@ impl Transformer for Normalizer {
         }
 
         transformer::walk_stmt(self, stmt);
-    }
-
-    fn visit_string_literal(&self, string_literal: &mut ast::StringLiteral) {
-        // they are Python code.
-        string_literal.value = "".into();
     }
 }
