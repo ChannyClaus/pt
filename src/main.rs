@@ -41,7 +41,11 @@ fn main() {
         Python::with_gil(|py| {
             let main = py.import_bound("generated").unwrap();
             let test: Py<PyAny> = main.getattr(test_name.to_string().as_str()).unwrap().into();
-            let _ = test.call0(py).unwrap();
+            let result = test.call0(py);
+            match result {
+                Ok(_) => println!("{} passed", test_name),
+                Err(e) => println!("{} failed: {:#?}", test_name, e),
+            }
         })
     }
 }
