@@ -24,16 +24,7 @@ impl Normalizer {
 impl Transformer for Normalizer {
     fn visit_stmt(&self, stmt: &mut Stmt) {
         match stmt {
-            Stmt::FunctionDef(ast::StmtFunctionDef {
-                parameters,
-                body,
-                decorator_list,
-                returns,
-                type_params,
-                name,
-                range,
-                ..
-            }) => {
+            Stmt::FunctionDef(ast::StmtFunctionDef { range: _, .. }) => {
                 // println!("inside function def");
                 // println!("name: {}", name);
                 // println!("decorator_list: {:#?}", decorator_list);
