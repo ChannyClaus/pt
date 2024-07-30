@@ -18,6 +18,12 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo --version
+
   musllinux:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
