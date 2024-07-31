@@ -72,6 +72,12 @@ fn main() {
         .collect::<Vec<_>>();
     println!("{:#?}", paths);
 
+    // TODO:
+    // 0. validate the existing test files (fixtures being required all exist, etc)
+    // 1. copy the test dir to a temp dir (via copy-on-write)
+    // 2. transform the test files via the AST
+    // 3. run the tests via pyo3.
+
     // let path = &args[1];
     // let binding = fs::read_to_string(path).unwrap();
     // let source = binding.as_str();
