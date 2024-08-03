@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 mod normalizer;
-use ruff_python_ast::{str::Quote, StmtFunctionDef};
+use ruff_python_ast::{str::Quote, ExprAttribute, StmtFunctionDef};
 use ruff_python_codegen::{stylist::Indentation, Generator};
 use ruff_python_parser::{self};
 use ruff_source_file::LineEnding;
@@ -21,29 +21,27 @@ fn parse_testfile(path: &str) -> TestFile {
     let mut tests = vec![];
     let mut fixtures = vec![];
     for stmt in syntax.as_module().unwrap().body.iter() {
-        match stmt {
-            ruff_python_ast::Stmt::FunctionDef(StmtFunctionDef {
-                name,
-                decorator_list,
-                ..
-            }) => {
-                if name.starts_with("test") {
-                    tests.push(name.to_string());
-                } else {
-                    for decorator in decorator_list.iter() {
-                        if let ruff_python_ast::Expr::Attribute(attr) = &decorator.expression {
-                            if let ruff_python_ast::Expr::Name(expr_name) = &*attr.value.clone() {
-                                if expr_name.id.to_string() == "ptst"
-                                    && attr.attr.id.to_string() == "fixture"
-                                {
-                                    fixtures.push(name.to_string());
-                                }
-                            }
+        if let ruff_python_ast::Stmt::FunctionDef(StmtFunctionDef {
+            name,
+            decorator_list,
+            ..
+        }) = stmt
+        {
+            if name.starts_with("test") {
+                tests.push(name.to_string());
+                continue;
+            }
+            for decorator in decorator_list.iter() {
+                if let ruff_python_ast::Expr::Attribute(ExprAttribute { value, attr, .. }) =
+                    &decorator.expression
+                {
+                    if let ruff_python_ast::Expr::Name(expr_name) = &*value.clone() {
+                        if expr_name.id.to_string() == "ptst" && attr.id.to_string() == "fixture" {
+                            fixtures.push(name.to_string());
                         }
                     }
                 }
             }
-            _ => continue,
         }
     }
 
