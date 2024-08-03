@@ -31,21 +31,13 @@ fn parse_testfile(path: &str) -> TestFile {
                     tests.push(name.to_string());
                 } else {
                     for decorator in decorator_list.iter() {
-                        match &decorator.expression {
-                            ruff_python_ast::Expr::Attribute(attr) => match *attr.value.clone() {
-                                ruff_python_ast::Expr::Name(expr_name) => {
-                                    if expr_name.id.to_string() == "ptst"
-                                        && attr.attr.id.to_string() == "fixture"
-                                    {
-                                        fixtures.push(name.to_string());
-                                    }
+                        if let ruff_python_ast::Expr::Attribute(attr) = &decorator.expression {
+                            if let ruff_python_ast::Expr::Name(expr_name) = &*attr.value.clone() {
+                                if expr_name.id.to_string() == "ptst"
+                                    && attr.attr.id.to_string() == "fixture"
+                                {
+                                    fixtures.push(name.to_string());
                                 }
-                                _ => {
-                                    println!("asdf");
-                                }
-                            },
-                            _ => {
-                                println!("asdf");
                             }
                         }
                     }
