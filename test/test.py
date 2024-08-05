@@ -1,7 +1,7 @@
 import ptst
 
 
-@ptst.fixture
+@ptst.fixture(autouse=True, scope='session')
 def sd_fixture_ptst():
     pass
 

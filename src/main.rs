@@ -1,13 +1,36 @@
 use pyo3::prelude::*;
 mod normalizer;
-use ruff_python_ast::{str::Quote, Expr, ExprAttribute, Stmt, StmtFunctionDef};
-use ruff_python_codegen::{stylist::Indentation, Generator};
-use ruff_python_parser::{self, parse};
-use ruff_source_file::LineEnding;
+use ruff_python_ast::{
+    comparable::ExprBoolLiteral, str::Quote, Expr, ExprAttribute, ExprBooleanLiteral, ExprCall,
+    Stmt, StmtFunctionDef,
+};
+use ruff_python_codegen::{stylist::Indentation, Generator, Stylist};
+use ruff_python_parser::{self, parse, parse_module};
+use ruff_source_file::{LineEnding, Locator};
 use std::{
     env,
     fs::{self, metadata},
 };
+
+#[derive(Debug)]
+pub struct Test {
+    pub name: String,
+    pub path: String,
+}
+
+impl Test {
+    pub fn run(self, py: Python) {
+        let import_path = self.path.replace(".py", "").replace("/", ".");
+        let imported = py.import_bound(import_path.as_str()).unwrap();
+        let result = imported.getattr(self.name.as_str()).unwrap().call0();
+        match result {
+            Ok(_) => println!("{} passed", self.name),
+            Err(e) => println!("{} failed: {:#?}", self.name, e),
+        }
+
+        // let main = py.import_bound(self.path).unwrap();
+    }
+}
 
 #[derive(Debug)]
 pub struct Fixture {
@@ -22,6 +45,11 @@ pub struct Package {
 }
 
 impl Package {
+    pub fn run(self, py: Python) {
+        for module in self.modules.into_iter() {
+            module.run(py)
+        }
+    }
     pub fn from_dir(path: &str) -> Self {
         let paths = fs::read_dir(path).unwrap();
 
@@ -54,18 +82,22 @@ impl Package {
 pub struct Module {
     pub path: String,
     pub fixtures: Vec<Fixture>,
-    pub tests: Vec<String>,
+    pub tests: Vec<Test>,
 }
 
 impl Module {
+    pub fn run(self, py: Python) {
+        for test in self.tests.into_iter() {
+            test.run(py);
+        }
+    }
     pub fn from_file(path: &str) -> Self {
         let source = fs::read_to_string(path).unwrap();
-        let parsed = parse(&source, ruff_python_parser::Mode::Module).unwrap();
-        let syntax = parsed.into_syntax();
+        let parsed = parse_module(source.as_str()).unwrap();
 
         let mut tests = vec![];
         let mut fixtures = vec![];
-        for stmt in syntax.as_module().unwrap().body.iter() {
+        for stmt in parsed.suite() {
             if let Stmt::FunctionDef(StmtFunctionDef {
                 name,
                 decorator_list,
@@ -73,23 +105,46 @@ impl Module {
             }) = stmt
             {
                 if name.starts_with("test") {
-                    tests.push(name.to_string());
+                    tests.push(Test {
+                        name: name.to_string(),
+                        path: path.to_string(),
+                    });
                     continue;
                 }
                 for decorator in decorator_list.iter() {
-                    if let Expr::Attribute(ExprAttribute { value, attr, .. }) =
-                        &decorator.expression
-                    {
-                        if let Expr::Name(expr_name) = &*value.clone() {
-                            if expr_name.id.to_string() == "ptst"
-                                && attr.id.to_string() == "fixture"
-                            {
-                                println!("decorator: {:#?}", decorator);
-                                fixtures.push(Fixture {
-                                    name: name.to_string(),
-                                })
+                    match &decorator.expression {
+                        Expr::Call(ExprCall {
+                            func, arguments, ..
+                        }) => {
+                            let attr_expr = func.as_attribute_expr().unwrap();
+                            // println!(
+                            //     "{:#?}",
+                            //     arguments.keywords[0].arg.clone().unwrap().to_string()
+                            // );
+                            // let Expr::BooleanLiteral(ExprBooleanLiteral { value, .. }) =
+                            //     arguments.keywords[0].value.clone()
+                            // else {
+                            //     todo!()
+                            // };
+
+                            match *attr_expr.value.clone() {
+                                Expr::Name(fixture_name) => {
+                                    if fixture_name.id.to_string() == "ptst".to_string()
+                                        && attr_expr.attr.to_string() == "fixture".to_string()
+                                    {
+                                        fixtures.push(Fixture {
+                                            name: name.id.to_string(),
+                                        });
+                                    }
+                                }
+                                _ => todo!(),
                             }
+                            // println!(
+                            //     "arguments.keywords: {:#?}",
+                            //     arguments.keywords[0].arg.clone().unwrap().id()
+                            // );
                         }
+                        _ => todo!(),
                     }
                 }
             }
@@ -104,43 +159,22 @@ impl Module {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if metadata(&args[1].clone()).unwrap().is_file() {
-        let module = Module::from_file(&args[1].clone());
-        // println!("module: {:#?}", module);
-        return;
-    }
-    let package = Package::from_dir(&args[1].clone());
-    // println!("package: {:#?}", package);
-    // let paths = get_paths(args[1].clone()).unwrap();
-    // let paths = fs::read_dir(args[1].clone())
-    //     .unwrap()
-    //     .into_iter()
-    //     .map(|entry| Module::from_file(entry.unwrap().path().to_str().unwrap()))
-    //     .collect::<Vec<_>>();
-    // println!("{:#?}", paths);
+    Python::with_gil(|py| {
+        let args: Vec<String> = env::args().collect();
+        if metadata(&args[1].clone()).unwrap().is_file() {
+            let module = Module::from_file(&args[1].clone());
+            module.run(py);
+            return;
+        }
+        let package = Package::from_dir(&args[1].clone());
+        package.run(py);
+    });
 
     // TODO:
     // 0. validate the existing test files (fixtures being required all exist, etc)
     // 1. copy the test dir to a temp dir (via copy-on-write)
     // 2. transform the test files via the AST
     // 3. run the tests via pyo3.
-
-    // let path = &args[1];
-    // let binding = fs::read_to_string(path).unwrap();
-    // let source = binding.as_str();
-
-    // let parsed = ruff_python_parser::parse(&source, ruff_python_parser::Mode::Module).unwrap();
-    // let mut syntax = parsed.into_syntax();
-    // normalizer::Normalizer.visit_module(&mut syntax);
-
-    // let indentation = Indentation::default();
-    // let quote = Quote::default();
-    // let line_ending = LineEnding::default();
-    // let mut generator = Generator::new(&indentation, quote, line_ending);
-
-    // generator.unparse_suite(&syntax.as_module().unwrap().body);
-    // fs::write("generated.py", generator.generate()).unwrap();
 
     // for test_name in test_names {
     //     Python::with_gil(|py| {
