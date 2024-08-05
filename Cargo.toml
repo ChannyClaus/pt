@@ -16,3 +16,5 @@ ruff_python_trivia = { git = "https://github.com/ChannyClaus/ruff.git" }
 ruff_source_file = { git = "https://github.com/ChannyClaus/ruff.git" }
 ruff_python_codegen = { git = "https://github.com/ChannyClaus/ruff.git" }
 itertools = "0.13.0"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"

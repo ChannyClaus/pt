@@ -1,16 +1,12 @@
 use pyo3::prelude::*;
 mod normalizer;
-use ruff_python_ast::{
-    comparable::ExprBoolLiteral, str::Quote, Expr, ExprAttribute, ExprBooleanLiteral, ExprCall,
-    Stmt, StmtFunctionDef,
-};
-use ruff_python_codegen::{stylist::Indentation, Generator, Stylist};
-use ruff_python_parser::{self, parse, parse_module};
-use ruff_source_file::{LineEnding, Locator};
+use ruff_python_ast::{Expr, ExprCall, Stmt, StmtFunctionDef};
+use ruff_python_parser::{self, parse_module};
 use std::{
     env,
     fs::{self, metadata},
 };
+use tracing::{debug, info};
 
 #[derive(Debug)]
 pub struct Test {
@@ -46,6 +42,7 @@ pub struct Package {
 
 impl Package {
     pub fn run(self, py: Python) {
+        debug!("running package: {:#?}", self.source);
         for module in self.modules.into_iter() {
             module.run(py)
         }
@@ -58,13 +55,13 @@ impl Package {
 
         for path in paths {
             let p = path.unwrap().path();
-            let pstr = p.to_str().unwrap().to_string();
-            if p.is_dir() && !pstr.contains("/.") {
+            let filename = p.file_name().unwrap().to_str().unwrap();
+            if p.is_dir() && !filename.contains("/.") {
                 subpackages.push(Package::from_dir(p.to_str().unwrap()));
                 continue;
             }
 
-            if pstr.starts_with("test") && pstr.ends_with(".py") {
+            if filename.starts_with("test") && filename.ends_with(".py") {
                 modules.push(Module::from_file(p.to_str().unwrap()));
                 continue;
             }
@@ -87,6 +84,7 @@ pub struct Module {
 
 impl Module {
     pub fn run(self, py: Python) {
+        debug!("running module: {:#?}", self.path);
         for test in self.tests.into_iter() {
             test.run(py);
         }
@@ -159,6 +157,10 @@ impl Module {
 }
 
 fn main() {
+    // install global collector configured based on RUST_LOG env var.
+    tracing_subscriber::fmt::init();
+
+    info!("starting the session");
     Python::with_gil(|py| {
         let args: Vec<String> = env::args().collect();
         if metadata(&args[1].clone()).unwrap().is_file() {
