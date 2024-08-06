@@ -16,9 +16,10 @@ pub struct Test {
 
 impl Test {
     pub fn run(self, py: Python) {
-        let import_path = self.path.replace(".py", "").replace("/", ".");
-        let imported = py.import_bound(import_path.as_str()).unwrap();
-        let result = imported.getattr(self.name.as_str()).unwrap().call0();
+        let bound =
+            PyModule::from_code_bound(py, fs::read_to_string(self.path).unwrap().as_str(), "", "")
+                .unwrap();
+        let result = bound.getattr(self.name.as_str()).unwrap().call0();
         match result {
             Ok(_) => info!("{} passed", self.name),
             Err(e) => error!("{} failed: {:#?}", self.name, e),
