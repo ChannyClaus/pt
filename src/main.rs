@@ -1,12 +1,12 @@
 use pyo3::prelude::*;
 mod normalizer;
-use ruff_python_ast::{Expr, ExprCall, Stmt, StmtFunctionDef};
+use ruff_python_ast::{Expr, ExprAttribute, ExprCall, ExprName, Stmt, StmtFunctionDef};
 use ruff_python_parser::{self, parse_module};
 use std::{
     env,
     fs::{self, metadata},
 };
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 #[derive(Debug)]
 pub struct Test {
@@ -20,8 +20,8 @@ impl Test {
         let imported = py.import_bound(import_path.as_str()).unwrap();
         let result = imported.getattr(self.name.as_str()).unwrap().call0();
         match result {
-            Ok(_) => println!("{} passed", self.name),
-            Err(e) => println!("{} failed: {:#?}", self.name, e),
+            Ok(_) => info!("{} passed", self.name),
+            Err(e) => error!("{} failed: {:#?}", self.name, e),
         }
 
         // let main = py.import_bound(self.path).unwrap();
@@ -137,10 +137,20 @@ impl Module {
                                 }
                                 _ => todo!(),
                             }
-                            // println!(
-                            //     "arguments.keywords: {:#?}",
-                            //     arguments.keywords[0].arg.clone().unwrap().id()
-                            // );
+                        }
+                        Expr::Attribute(ExprAttribute { value, attr, .. }) => {
+                            match (**value).clone() {
+                                Expr::Name(ExprName { id, .. }) => {
+                                    if id.to_string() == "ptst".to_string()
+                                        && attr.to_string() == "fixture".to_string()
+                                    {
+                                        fixtures.push(Fixture {
+                                            name: name.id.to_string(),
+                                        });
+                                    }
+                                }
+                                _ => todo!(),
+                            }
                         }
                         _ => todo!(),
                     }
@@ -171,22 +181,4 @@ fn main() {
         let package = Package::from_dir(&args[1].clone());
         package.run(py);
     });
-
-    // TODO:
-    // 0. validate the existing test files (fixtures being required all exist, etc)
-    // 1. copy the test dir to a temp dir (via copy-on-write)
-    // 2. transform the test files via the AST
-    // 3. run the tests via pyo3.
-
-    // for test_name in test_names {
-    //     Python::with_gil(|py| {
-    //         let main = py.import_bound("generated").unwrap();
-    //         let test: Py<PyAny> = main.getattr(test_name.to_string().as_str()).unwrap().into();
-    //         let result = test.call0(py);
-    //         match result {
-    //             Ok(_) => println!("{} passed", test_name),
-    //             Err(e) => println!("{} failed: {:#?}", test_name, e),
-    //         }
-    //     })
-    // }
 }
