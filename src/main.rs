@@ -23,8 +23,6 @@ impl Test {
             Ok(_) => info!("{} passed", self.name),
             Err(e) => error!("{} failed: {:#?}", self.name, e),
         }
-
-        // let main = py.import_bound(self.path).unwrap();
     }
 }
 
