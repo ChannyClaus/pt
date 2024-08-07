@@ -9,85 +9,27 @@ use std::{
 use tracing::{debug, error, info};
 
 #[derive(Debug)]
-pub struct Test {
-    pub name: String,
-    pub path: String,
-}
-
-impl Test {
-    pub fn run(self, py: Python) {
-        let bound =
-            PyModule::from_code_bound(py, fs::read_to_string(self.path).unwrap().as_str(), "", "")
-                .unwrap();
-        let result = bound.getattr(self.name.as_str()).unwrap().call0();
-        match result {
-            Ok(_) => info!("{} passed", self.name),
-            Err(e) => error!("{} failed: {:#?}", self.name, e),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Fixture {
-    pub name: String,
-}
-
-#[derive(Debug)]
-pub struct Package {
-    pub source: String,
-    pub modules: Vec<Module>,
-    pub subpackages: Vec<Package>,
-}
-
-impl Package {
-    pub fn run(self, py: Python) {
-        debug!("running package: {:#?}", self.source);
-        for module in self.modules.into_iter() {
-            module.run(py)
-        }
-    }
-    pub fn from_dir(path: &str) -> Self {
-        let paths = fs::read_dir(path).unwrap();
-
-        let mut subpackages = vec![];
-        let mut modules = vec![];
-
-        for path in paths {
-            let p = path.unwrap().path();
-            let filename = p.file_name().unwrap().to_str().unwrap();
-            if p.is_dir() && !filename.contains("/.") {
-                subpackages.push(Package::from_dir(p.to_str().unwrap()));
-                continue;
-            }
-
-            if filename.starts_with("test") && filename.ends_with(".py") {
-                modules.push(Module::from_file(p.to_str().unwrap()));
-                continue;
-            }
-        }
-
-        Self {
-            source: path.to_string(),
-            modules,
-            subpackages,
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct Module {
     pub path: String,
     pub fixtures: Vec<Fixture>,
     pub tests: Vec<Test>,
 }
 
+#[derive(Debug)]
+pub struct Test {
+    pub path: String,
+    pub name: String,
+}
+
+#[derive(Debug)]
+pub struct Fixture {
+    pub name: String,
+    pub path: String,
+    pub scope: String,
+    pub autouse: bool,
+}
+
 impl Module {
-    pub fn run(self, py: Python) {
-        debug!("running module: {:#?}", self.path);
-        for test in self.tests.into_iter() {
-            test.run(py);
-        }
-    }
     pub fn from_file(path: &str) -> Self {
         let source = fs::read_to_string(path).unwrap();
         let parsed = parse_module(source.as_str()).unwrap();
@@ -131,6 +73,9 @@ impl Module {
                                     {
                                         fixtures.push(Fixture {
                                             name: name.id.to_string(),
+                                            scope: "function".to_string(),
+                                            autouse: false,
+                                            path: path.to_string(),
                                         });
                                     }
                                 }
@@ -145,6 +90,9 @@ impl Module {
                                     {
                                         fixtures.push(Fixture {
                                             name: name.id.to_string(),
+                                            scope: "function".to_string(),
+                                            autouse: false,
+                                            path: path.to_string(),
                                         });
                                     }
                                 }
@@ -172,12 +120,20 @@ fn main() {
     info!("starting the session");
     Python::with_gil(|py| {
         let args: Vec<String> = env::args().collect();
-        if metadata(&args[1].clone()).unwrap().is_file() {
-            let module = Module::from_file(&args[1].clone());
-            module.run(py);
-            return;
+        let path = args[1].clone();
+        let module = Module::from_file(&path);
+        println!("module: {:#?}", module);
+        let bound =
+            PyModule::from_code_bound(py, fs::read_to_string(path).unwrap().as_str(), "", "")
+                .unwrap();
+
+        for test in module.tests.iter() {
+            let result = bound.getattr(test.name.as_str()).unwrap().call0();
+            match result {
+                Ok(_) => info!("{} passed", &test.name),
+                Err(e) => error!("{} failed: {:#?}", &test.name, e),
+            }
         }
-        let package = Package::from_dir(&args[1].clone());
-        package.run(py);
+        return;
     });
 }
